@@ -1,2 +1,4 @@
-symbiosis.repositoryProvider
+symbiosis.repository
 ============================
+
+Angular ORM thing
