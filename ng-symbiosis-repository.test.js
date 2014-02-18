@@ -4,12 +4,15 @@ describe('ng-symbiosis-repository', function () {
 
     beforeEach(function () {
 
+        BaseModel = function () {
+            
+        }
+
         module('ngSymbiosis.repository');
 
-        inject(function (_BaseRepository_, _$httpBackend_, _BaseModel_, _$rootScope_) {
+        inject(function (_BaseRepository_, _$httpBackend_, _$rootScope_) {
             BaseRepository = _BaseRepository_;
             $httpBackend = _$httpBackend_;
-            BaseModel = _BaseModel_;
             $rootScope = _$rootScope_;
         });
 
