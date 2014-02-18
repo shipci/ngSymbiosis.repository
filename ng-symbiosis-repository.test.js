@@ -4,8 +4,8 @@ describe('ng-symbiosis-repository', function () {
 
     beforeEach(function () {
 
-        BaseModel = function () {
-
+        BaseModel = function (p) {
+            this.id = p.id;
         };
 
         BaseModel.$settings = {
@@ -44,8 +44,6 @@ describe('ng-symbiosis-repository', function () {
             $httpBackend.flush();
 
             expect(response instanceof BaseModel).toBe(true);
-            expect(response.id).toEqual(5);
-            expect(response.title).toEqual('Base title');
         });
 
         it('should not do subsequent calls if model already exits in pool', function () {
@@ -63,8 +61,6 @@ describe('ng-symbiosis-repository', function () {
             $rootScope.$digest();
 
             expect(response instanceof BaseModel).toBe(true);
-            expect(response.id).toEqual(5);
-            expect(response.title).toEqual('Base title');
         });
 
         it('should handle rejects', function () {
@@ -102,12 +98,7 @@ describe('ng-symbiosis-repository', function () {
             $httpBackend.flush();
 
             expect(Base5 instanceof BaseModel).toBe(true);
-            expect(Base5.id).toEqual(5);
-            expect(Base5.title).toEqual('Base title');
-
             expect(Base6 instanceof BaseModel).toBe(true);
-            expect(Base6.id).toEqual(6);
-            expect(Base6.title).toEqual('Base title');
         });
 
         it('should handle rejects', function () {
@@ -149,8 +140,6 @@ describe('ng-symbiosis-repository', function () {
             $rootScope.$digest();
 
             expect(Base instanceof BaseModel).toBe(true);
-            expect(Base.id).toEqual(5);
-            expect(Base.title).toEqual('Base title');
         });
     });
 
@@ -158,14 +147,13 @@ describe('ng-symbiosis-repository', function () {
         it('should return a newed up instance of the Base Model', function () {
             var Base = BaseRepository.create({title: 'New title'});
             expect(Base instanceof BaseModel).toBe(true);
-            expect(Base.title).toEqual('New title');
         });
     });
 
-    describe('_cache', function () {
+    describe('cache', function () {
         it('should return a reference to the pool', function () {
             var newBase = {id: 19, title: 'Yeah!'};
-            BaseRepository._cache[19] = newBase;
+            BaseRepository.cache[19] = newBase;
 
             var Base;
             BaseRepository.getById(19).then(function (response) {

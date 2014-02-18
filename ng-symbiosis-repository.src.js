@@ -1,8 +1,6 @@
 angular.module('ngSymbiosis.repository', [])
     .factory('BaseRepository', function ($q, $http) {
 
-        var _cache = [];
-
         function BaseRepository(data) {
             if (!data.name) {
                 throw new Error('You must specify a name');
@@ -12,6 +10,8 @@ angular.module('ngSymbiosis.repository', [])
                 name: data.name,
                 model: data.model
             };
+
+            this.cache = [];
         }
 
         BaseRepository.prototype.getById = function (id) {
@@ -19,7 +19,7 @@ angular.module('ngSymbiosis.repository', [])
             var Model = repository.$settings.model;
 
             var deferred = $q.defer();
-            var instance = _cache[id];
+            var instance = repository.cache[id];
             if (instance) {
                 deferred.resolve(instance);
                 return deferred.promise;
@@ -27,7 +27,7 @@ angular.module('ngSymbiosis.repository', [])
             else {
                 return $http.get(Model.$settings.url + '/' + id, {tracker: repository.$settings.name + '.getById'}).then(function (response) {
                     var instance = new Model(response.data);
-                    _cache[id] = instance;
+                    repository.cache[id] = instance;
                     return instance;
                 });
             }
@@ -40,10 +40,10 @@ angular.module('ngSymbiosis.repository', [])
             //TODO: Max length of pool, to not manage to many instances in memory?
             return $http.get(Model.$settings.url, {tracker: repository.$settings.name + '.getAll'}).then(function (response) {
                 if (angular.isArray(response.data)) {
-                    _cache.length = 0; //empty pool
+                    repository.cache.length = 0; //empty pool
                     return response.data.map(function (item) {
                         var instance = new Model(item);
-                        _cache[item.id] = instance;
+                        repository.cache[item.id] = instance;
                         return instance;
                     });
                 }
@@ -59,7 +59,7 @@ angular.module('ngSymbiosis.repository', [])
             var Model = repository.$settings.model;
 
             if (!(item instanceof Model)) throw new Error('You must provide a valid ' + repository.$settings.name + 'Model');
-            _cache[item.id] = item;
+            repository.cache[item.id] = item;
         };
 
         BaseRepository.prototype.create = function (data) {
