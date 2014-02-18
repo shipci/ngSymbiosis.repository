@@ -35,6 +35,7 @@ angular.module('ngSymbiosis.repository', [])
 
         BaseRepository.prototype.getAll = function () {
             var repository = this;
+            var Model = repository.$settings.model;
 
             //TODO: Max length of pool, to not manage to many instances in memory?
             return $http.get(Model.$settings.url, {tracker: repository.$settings.name + '.getAll'}).then(function (response) {

@@ -5,13 +5,20 @@ describe('ng-symbiosis-repository', function () {
     beforeEach(function () {
 
         BaseModel = function () {
-            
-        }
+
+        };
+
+        BaseModel.$settings = {
+            url: 'URL'
+        };
 
         module('ngSymbiosis.repository');
 
         inject(function (_BaseRepository_, _$httpBackend_, _$rootScope_) {
-            BaseRepository = _BaseRepository_;
+            BaseRepository = new _BaseRepository_({
+                name: 'Test',
+                model: BaseModel
+            });
             $httpBackend = _$httpBackend_;
             $rootScope = _$rootScope_;
         });
@@ -25,7 +32,7 @@ describe('ng-symbiosis-repository', function () {
 
     describe('getById', function () {
         it('should return models by id', function () {
-            $httpBackend.expectGET(BaseModel.$urlBase + '/5').respond(200, {id: 5, title: 'Base title'});
+            $httpBackend.expectGET(BaseModel.$settings.url + '/5').respond(200, {id: 5, title: 'Base title'});
 
             var promise = BaseRepository.getById(5);
 
@@ -42,7 +49,7 @@ describe('ng-symbiosis-repository', function () {
         });
 
         it('should not do subsequent calls if model already exits in pool', function () {
-            $httpBackend.expectGET(BaseModel.$urlBase + '/5').respond(200, {id: 5, title: 'Base title'});
+            $httpBackend.expectGET(BaseModel.$settings.url + '/5').respond(200, {id: 5, title: 'Base title'});
             BaseRepository.getById(5);
             $httpBackend.flush();
 
@@ -61,7 +68,7 @@ describe('ng-symbiosis-repository', function () {
         });
 
         it('should handle rejects', function () {
-            $httpBackend.expectGET(BaseModel.$urlBase + '/5').respond(404, 'No such thang!');
+            $httpBackend.expectGET(BaseModel.$settings.url + '/5').respond(404, 'No such thang!');
 
             var promise = BaseRepository.getById(5),
                 response,
@@ -79,7 +86,7 @@ describe('ng-symbiosis-repository', function () {
 
     describe('getAll', function () {
         it('should return models by id', function () {
-            $httpBackend.expectGET(BaseModel.$urlBase).respond(200, [
+            $httpBackend.expectGET(BaseModel.$settings.url).respond(200, [
                 {id: 5, title: 'Base title'},
                 {id: 6, title: 'Base title'}
             ]);
@@ -104,7 +111,7 @@ describe('ng-symbiosis-repository', function () {
         });
 
         it('should handle rejects', function () {
-            $httpBackend.expectGET(BaseModel.$urlBase).respond(404, 'No such thang!');
+            $httpBackend.expectGET(BaseModel.$settings.url).respond(404, 'No such thang!');
 
             var promise = BaseRepository.getAll(5),
                 success = jasmine.createSpy('success'),
@@ -120,14 +127,6 @@ describe('ng-symbiosis-repository', function () {
     });
 
     describe('attach', function () {
-
-        var BaseModel;
-
-        beforeEach(function () {
-            inject(function (_BaseModel_) {
-                BaseModel = _BaseModel_;
-            });
-        });
 
         it('should throw if trying to attach a model that is not of valid type', function () {
             function wrapper() {
