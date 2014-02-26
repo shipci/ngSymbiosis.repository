@@ -6,6 +6,7 @@ Angular ORM that uses [ngSymbiosis model](https://github.com/ngSymbiosis/ngSymbi
 `bower install ng-symbiosis-repository`
 
 # Usage (TODO: :))
+Include `ngSymbiosis.repository` as a dependancy to your application.
 Check [ngSymbiosis model](https://github.com/ngSymbiosis/ngSymbiosis.model) for now
 
 ```javascript
