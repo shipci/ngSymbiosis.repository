@@ -17,7 +17,7 @@ angular.module('yourApp')
     });
 ```
 
-```
+```javascript
 //Does a GET to the models base url (/videos/)
 VideoRepository.getAll().then(function (videos) {
     $scope.videos = videos;
