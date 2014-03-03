@@ -17,6 +17,10 @@ angular.module('yourApp')
     });
 ```
 
+```
+
+```
+
 # Extending a repository with custom methods
 
 Example, showing how to add a custom `search` method to a `tags` repository: 
@@ -57,4 +61,13 @@ angular.module('yourApp')
         return new TagRepository({name: 'TagRepository', model: TagModel});
     });
     
+```
+
+## Usage
+
+```javascript
+    TagRepository.search('query').then(function (hits) {
+        //hits is an array of model instances
+        doSomething(hits);
+    });
 ```
