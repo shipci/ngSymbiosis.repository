@@ -20,7 +20,7 @@ angular.module('yourApp')
 
 # Extending a repository with custom methods
 
-Example: 
+Example, showing how to add a custom `search` method to a `tags` repository: 
 ```javascript
 
 angular.module('yourApp')
