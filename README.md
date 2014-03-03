@@ -18,9 +18,15 @@ angular.module('yourApp')
 ```
 
 ```
-    VideoRepository.getAll().then(function (videos) {
-        $scope.videos = videos;
-    });
+//Does a GET to the models base url (/videos/)
+VideoRepository.getAll().then(function (videos) {
+    $scope.videos = videos;
+});
+
+//Does a GET for a specific entity (/videos/1)
+VideoRepository.getById(1).then(function (video) {
+    $scope.video = video;
+});
 ```
 
 # Extending a repository with custom methods
@@ -68,8 +74,8 @@ angular.module('yourApp')
 ## Usage
 
 ```javascript
-    TagRepository.search('query').then(function (hits) {
-        //hits is an array of model instances
-        doSomething(hits);
-    });
+TagRepository.search('query').then(function (hits) {
+    //hits is an array of model instances
+    doSomething(hits);
+});
 ```
