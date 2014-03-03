@@ -18,7 +18,9 @@ angular.module('yourApp')
 ```
 
 ```
-
+    VideoRepository.getAll().then(function (videos) {
+        $scope.videos = videos;
+    });
 ```
 
 # Extending a repository with custom methods
