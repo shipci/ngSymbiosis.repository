@@ -26,12 +26,16 @@ Example, showing how to add a custom `search` method to a `tags` repository:
 angular.module('yourApp')
     .factory('TagRepository', function ($injector, TagModel, $http) {
         var BaseRepository = $injector.get('BaseRepository');
-
+        
+        
         function TagRepository() {
+            //Call `super`
             BaseRepository.apply(this, arguments);
         }
+        //Inherit from BaseRepository
         TagRepository.prototype = Object.create(BaseRepository.prototype);
 
+        //Add custom serach method
         TagRepository.prototype.search = function (query) {
             var repository = this;
             var Model = repository.$settings.model;
@@ -50,6 +54,7 @@ angular.module('yourApp')
             });
         };
 
+        //Return a new instance of the repository
         return new TagRepository({name: 'TagRepository', model: TagModel});
     });
     
