@@ -1,8 +1,11 @@
+"use strict";
+
 describe('ng-symbiosis-repository', function () {
 
-    var BaseRepository, $httpBackend, BaseModel, $rootScope, $localStorage;
+    var BaseRepository, $httpBackend, BaseModel, $rootScope, $localStorage, currentTime, time;
 
     beforeEach(function () {
+        currentTime = 0;
 
         BaseModel = function (p) {
             this.id = p.id;
@@ -15,8 +18,15 @@ describe('ng-symbiosis-repository', function () {
 
         $localStorage = {};
 
+        time = {
+            now: function () {
+                return currentTime;
+            }
+        };
+
         module('ngSymbiosis.repository', function ($provide) {
-            $provide.value('$localStorage', $localStorage);
+            $provide.value('$localStorage', $localStorage)
+            $provide.value('time', time)
         });
 
         inject(function (_BaseRepository_, _$httpBackend_, _$rootScope_) {
@@ -51,7 +61,7 @@ describe('ng-symbiosis-repository', function () {
             expect(response instanceof BaseModel).toBe(true);
         });
 
-        it('should not do subsequent calls if model already exits in pool', function () {
+        it('should not do subsequent calls if model is cached', function () {
             $httpBackend.expectGET(BaseModel.$settings.url + '/5').respond(200, {id: 5, title: 'Base title'});
             BaseRepository.getById(5);
             $httpBackend.flush();
@@ -133,8 +143,8 @@ describe('ng-symbiosis-repository', function () {
         });
 
         it('should return the attached model on subsequent requests', function () {
-
-            BaseRepository.attach(new BaseModel({id: 5, title: 'Base title'}));
+            currentTime = 0;
+            BaseRepository.attach(new BaseModel({id: 5, title: 'Base title'}), {updatedAt: 0});
 
             var Base;
 
@@ -157,8 +167,10 @@ describe('ng-symbiosis-repository', function () {
 
     describe('cache', function () {
         it('should return the cached data', function () {
+            currentTime = 0;
             var newBase = {id: 19, title: 'Yeah!'};
             BaseRepository.cache[19] = newBase;
+            BaseRepository.metadata[19] = {updatedAt: 0};
 
             var Base;
             BaseRepository.getById(19).then(function (response) {
@@ -171,8 +183,10 @@ describe('ng-symbiosis-repository', function () {
         });
 
         it('should return the cached instance', function () {
+            currentTime = 0;
             var newBase = new BaseModel({id: 19, title: 'Yeah!'});
             BaseRepository.cache[19] = newBase;
+            BaseRepository.metadata[19] = {updatedAt: 0};
 
             var Base;
             BaseRepository.getById(19).then(function (response) {

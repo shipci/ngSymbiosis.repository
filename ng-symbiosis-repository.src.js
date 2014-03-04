@@ -11,30 +11,45 @@ try
 catch(e){}
 
 angular.module('ngSymbiosis.repository', deps)
-    .factory('BaseRepository', function ($q, $http, $injector) {
-
+    .service('time',function () {
+        this.now = function () {
+            return new Date().getTime();
+        }
+    })
+    .factory('BaseRepository', function ($q, $http, $injector, time) {
         var localStorage;
-
-        var idParameter = 'id';
 
         function BaseRepository(data) {
             if (!data.name) {
                 throw new Error('You must specify a name');
             }
 
-            this.$settings = {
-                name: data.name,
-                model: data.model
+            var defaults = {
+                trackBy: 'id', //id field
+                cachetime: 60, //default number of seconds to cache object
+                localStorage: {
+                    cacheNamespace: data.name + 'Repository.cache',
+                    metadataNamespace: data.name + 'Repository.metadata'
+                }
             };
+
+            this.$settings = angular.extend(defaults, data);
 
             if($injector.has('$localStorage')) {
                 localStorage = $injector.get('$localStorage');
-                localStorage[data.name + 'Repository.cache'] = localStorage[data.name + 'Repository.cache'] || {};
-                this.cache = localStorage[data.name + 'Repository.cache'];
+
+                var cacheNS = this.$settings.localStorage.cacheNamespace, metadataNS = this.$settings.localStorage.metadataNamespace;
+
+                localStorage[cacheNS] = localStorage[cacheNS] || {};
+                this.cache = localStorage[cacheNS];
+
+                localStorage[metadataNS] = localStorage[metadataNS] || {};
+                this.metadata = localStorage[metadataNS];
             }
             else
             {
                 this.cache = {};
+                this.metadata = {};
             }
 
         }
@@ -45,10 +60,14 @@ angular.module('ngSymbiosis.repository', deps)
 
             var deferred = $q.defer();
             var instance = repository.cache[id];
-            if (instance) {
+
+            var useCache = repository.metadata && repository.metadata[id] && typeof repository.metadata[id].updatedAt == 'number' &&  (repository.metadata[id].updatedAt - repository.$settings.cachetime) < time.now();
+
+            if (instance && useCache) {
 
                 if(!(instance instanceof Model)) {
                     instance = repository.cache[id] = new Model(repository.cache[id]);
+                    repository.metadata[id] = {};
                 }
 
                 deferred.resolve(instance);
@@ -58,6 +77,10 @@ angular.module('ngSymbiosis.repository', deps)
                 return $http.get(Model.$settings.url + '/' + id, {tracker: repository.$settings.name + '.getById'}).then(function (response) {
                     var instance = new Model(response.data);
                     repository.cache[id] = instance;
+                    repository.metadata[id] = {
+                        updatedAt: time.now()
+                    };
+
                     return instance;
                 });
             }
@@ -72,7 +95,14 @@ angular.module('ngSymbiosis.repository', deps)
                 if (angular.isArray(response.data)) {
                     return response.data.map(function (item) {
                         var instance = new Model(item);
-                        repository.cache[item[idParameter]] = instance;
+
+                        var idParam = repository.$settings.trackBy;
+
+                        repository.cache[item[idParam]] = instance;
+                        repository.metadata[item[idParam]] = {
+                            updatedAt: time.now()
+                        };
+
                         return instance;
                     });
                 }
@@ -83,18 +113,22 @@ angular.module('ngSymbiosis.repository', deps)
         };
 
         //This is to attach new models to the Repository
-        BaseRepository.prototype.attach = function (item) {
+        BaseRepository.prototype.attach = function (item, metadata) {
             var repository = this;
             var Model = repository.$settings.model;
+            var idParam = repository.$settings.trackBy;
 
             if (!(item instanceof Model)) throw new Error('You must provide a valid ' + repository.$settings.name + 'Model');
 
-            if(repository.cache[item[idParameter]]) {
-                angular.copy(item, repository.cache[item[idParameter]]);
+            //Do not lose reference to original object
+            if(repository.cache[item[idParam]]) {
+                angular.copy(item, repository.cache[item[idParam]]);
+                angular.copy(metadata, repository.metadata[item[idParam]]);
             }
             else
             {
-                repository.cache[item[idParameter]] = item;
+                repository.cache[item[idParam]] = item;
+                repository.metadata[item[idParam]] = metadata || {};
             }
         };
 
