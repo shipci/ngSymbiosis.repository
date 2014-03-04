@@ -2,16 +2,16 @@
 
 var deps = [];
 
-try
-{
+try {
     //Check if ngStorage is available
     angular.module('testIfNgStorageIsAvailable').requires.push('ngStorage');
     deps.push('ngStorage');
 }
-catch(e){}
+catch (e) {
+}
 
 angular.module('ngSymbiosis.repository', deps)
-    .service('time',function () {
+    .service('time', function () {
         this.now = function () {
             return new Date().getTime();
         }
@@ -35,7 +35,7 @@ angular.module('ngSymbiosis.repository', deps)
 
             this.$settings = angular.extend(defaults, data);
 
-            if($injector.has('$localStorage')) {
+            if ($injector.has('$localStorage')) {
                 localStorage = $injector.get('$localStorage');
 
                 var cacheNS = this.$settings.localStorage.cacheNamespace, metadataNS = this.$settings.localStorage.metadataNamespace;
@@ -46,8 +46,7 @@ angular.module('ngSymbiosis.repository', deps)
                 localStorage[metadataNS] = localStorage[metadataNS] || {};
                 this.metadata = localStorage[metadataNS];
             }
-            else
-            {
+            else {
                 this.cache = {};
                 this.metadata = {};
             }
@@ -61,11 +60,11 @@ angular.module('ngSymbiosis.repository', deps)
             var deferred = $q.defer();
             var instance = repository.cache[id];
 
-            var useCache = repository.metadata && repository.metadata[id] && typeof repository.metadata[id].updatedAt == 'number' &&  (repository.metadata[id].updatedAt - repository.$settings.cachetime) < time.now();
+            var useCache = repository.metadata && repository.metadata[id] && typeof repository.metadata[id].updatedAt == 'number' && (repository.metadata[id].updatedAt - repository.$settings.cachetime) < time.now();
 
             if (instance && useCache) {
 
-                if(!(instance instanceof Model)) {
+                if (!(instance instanceof Model)) {
                     instance = repository.cache[id] = new Model(repository.cache[id]);
                     repository.metadata[id] = {};
                 }
@@ -121,12 +120,11 @@ angular.module('ngSymbiosis.repository', deps)
             if (!(item instanceof Model)) throw new Error('You must provide a valid ' + repository.$settings.name + 'Model');
 
             //Do not lose reference to original object
-            if(repository.cache[item[idParam]]) {
+            if (repository.cache[item[idParam]]) {
                 angular.copy(item, repository.cache[item[idParam]]);
                 angular.copy(metadata, repository.metadata[item[idParam]]);
             }
-            else
-            {
+            else {
                 repository.cache[item[idParam]] = item;
                 repository.metadata[item[idParam]] = metadata || {};
             }
@@ -140,4 +138,35 @@ angular.module('ngSymbiosis.repository', deps)
         };
 
         return BaseRepository;
-    });
+    })
+    .config(['$httpProvider', function ($httpProvider) {
+        $httpProvider.interceptors.push(['$rootScope', '$q', '$http', function ($rootScope, $q, $timeout, $http) {
+
+            var maxRetries = 10;
+
+            return {
+                responseError: function (rejection) {
+                    if (rejection.status === 0) {
+                        var deferred = $q.defer();
+
+                        $timeout(function () {
+                            if (rejection.config.tries >= maxRetries) {
+                                deferred.reject(response)
+                            }
+
+                            $http(rejection.config).then(function (response) {
+                                deferred.resolve(response);
+                            }, function (response) {
+                                deferred.reject(response);
+                            });
+
+                        },3000);
+
+                        return deferred.promise;
+                    }
+                    // otherwise, default behaviour
+                    return $q.reject(rejection);
+                }
+            };
+        }]);
+    }]);
