@@ -1,18 +1,23 @@
 describe('ng-symbiosis-repository', function () {
 
-    var BaseRepository, $httpBackend, BaseModel, $rootScope;
+    var BaseRepository, $httpBackend, BaseModel, $rootScope, $localStorage;
 
     beforeEach(function () {
 
         BaseModel = function (p) {
             this.id = p.id;
+            this.title = p.title;
         };
 
         BaseModel.$settings = {
             url: 'URL'
         };
 
-        module('ngSymbiosis.repository');
+        $localStorage = {};
+
+        module('ngSymbiosis.repository', function ($provide) {
+            $provide.value('$localStorage', $localStorage);
+        });
 
         inject(function (_BaseRepository_, _$httpBackend_, _$rootScope_) {
             BaseRepository = new _BaseRepository_({
@@ -151,7 +156,7 @@ describe('ng-symbiosis-repository', function () {
     });
 
     describe('cache', function () {
-        it('should return a reference to the pool', function () {
+        it('should return the cached data', function () {
             var newBase = {id: 19, title: 'Yeah!'};
             BaseRepository.cache[19] = newBase;
 
@@ -161,8 +166,28 @@ describe('ng-symbiosis-repository', function () {
             });
             $rootScope.$digest();
 
+            expect(Base instanceof BaseModel).toBe(true);
+            expect(Base).toEqual(newBase);
+        });
+
+        it('should return the cached instance', function () {
+            var newBase = new BaseModel({id: 19, title: 'Yeah!'});
+            BaseRepository.cache[19] = newBase;
+
+            var Base;
+            BaseRepository.getById(19).then(function (response) {
+                Base = response;
+            });
+            $rootScope.$digest();
+
+            expect(Base instanceof BaseModel).toBe(true);
             expect(Base).toBe(newBase);
         });
+
+        it('should save cache to localStorage', function() {
+            expect(BaseRepository.cache).toBe($localStorage['TestRepository.cache']);
+        });
+
     });
 
     describe('saveChanges', function () {
