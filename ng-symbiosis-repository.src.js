@@ -59,30 +59,27 @@ angular.module('ngSymbiosis.repository', deps)
             var Model = repository.$settings.model;
 
             var deferred = $q.defer();
-            var instance = repository.cache[id];
+            var wasCached = !!repository.cache[id];
 
-            var useCache = repository.metadata && repository.metadata[id] && typeof repository.metadata[id].updatedAt == 'number' &&  (repository.metadata[id].updatedAt - repository.$settings.cachetime) < time.now();
+            var instance = repository.cache[id] = repository.cache[id] || new Model();
 
-            if (instance && useCache) {
+            var useCache = wasCached && repository.metadata && repository.metadata[id] && typeof repository.metadata[id].updatedAt == 'number' && (repository.metadata[id].updatedAt - repository.$settings.cachetime) < time.now();
 
-                if(!(instance instanceof Model)) {
-                    instance = repository.cache[id] = new Model(repository.cache[id]);
-                    repository.metadata[id] = {};
-                }
+            repository.metadata[id] = repository.metadata[id] || {};
 
-                deferred.resolve(instance);
-                return deferred.promise;
+            if (useCache) {
+                deferred.resolve( instance );
+                return angular.extend(deferred.promise, {$value: instance});
             }
             else {
-                return $http.get(Model.$settings.url + '/' + id, {tracker: repository.$settings.name + '.getById'}).then(function (response) {
-                    var instance = new Model(response.data);
-                    repository.cache[id] = instance;
-                    repository.metadata[id] = {
-                        updatedAt: time.now()
-                    };
+              var promise = $http.get(Model.$settings.url + '/' + id, {tracker: repository.$settings.name + '.getById'}).then(function (response) {
+                instance.$set(response.data);
+                repository.cache[id] = instance;
+                repository.metadata[id].updatedAt = time.now();
+                return instance;
+              });
 
-                    return instance;
-                });
+              return angular.extend(promise, {$value:instance});
             }
         };
 
@@ -90,26 +87,27 @@ angular.module('ngSymbiosis.repository', deps)
             var repository = this;
             var Model = repository.$settings.model;
 
-            //TODO: Max length of pool, to not manage to many instances in memory?
-            return $http.get(Model.$settings.url, {tracker: repository.$settings.name + '.getAll'}).then(function (response) {
-                if (angular.isArray(response.data)) {
-                    return response.data.map(function (item) {
-                        var instance = new Model(item);
+            var promise = $http.get(Model.$settings.url, {tracker: repository.$settings.name + '.getAll'}).then(function (response) {
+              if (angular.isArray(response.data)) {
+                return response.data.map(function (item) {
+                  var instance = new Model(item);
 
-                        var idParam = repository.$settings.trackBy;
+                  var idParam = repository.$settings.trackBy;
 
-                        repository.cache[item[idParam]] = instance;
-                        repository.metadata[item[idParam]] = {
-                            updatedAt: time.now()
-                        };
+                  repository.cache[item[idParam]] = instance;
+                  repository.metadata[item[idParam]] = {
+                    updatedAt: time.now()
+                  };
 
-                        return instance;
-                    });
-                }
-                else {
-                    throw new Error('Unexpected response from API. Expected Array, got ' + typeof response.data, response.data);
-                }
+                  return instance;
+                });
+              }
+              else {
+                throw new Error('Unexpected response from API. Expected Array, got ' + typeof response.data, response.data);
+              }
             });
+
+            return angular.extend(promise, {$value: repository.cache});
         };
 
         //This is to attach new models to the Repository
